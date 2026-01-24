@@ -16,6 +16,10 @@ pub struct ApiData {
 }
 
 pub fn genapimap() -> ApiMap {
+  rustls::crypto::ring::default_provider()
+    .install_default()
+    .expect("Failed to install rustls crypto provider");
+
   let mut out = HashMap::new();
 
   #[allow(clippy::unwrap_used)]
