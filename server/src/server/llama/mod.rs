@@ -71,6 +71,11 @@ impl LlamaChatHandler {
       return Ok(&EMPTY);
     }
 
-    Ok(self.msg.get(indexone..(indexone + count)).unwrap_or(&EMPTY))
+    Ok(
+      self
+        .msg
+        .get(indexone..(indexone + count))
+        .unwrap_or(&EMPTY as &[Message]),
+    )
   }
 }
