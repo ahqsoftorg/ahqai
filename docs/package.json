@@ -14,7 +14,7 @@
   "packageManager": "pnpm@10.14.0",
   "devDependencies": {
     "vitepress": "2.0.0-alpha.12",
-    "vue": "^3.5.22"
+    "vue": "^3.5.27"
   },
   "dependencies": {
     "vitepress-plugin-tabs": "^0.7.3"
