@@ -5,6 +5,8 @@ import { Category } from "@/components/category";
 import { Separator } from "@/components/ui/separator";
 import { PlusIcon, ScrollText } from "lucide-react";
 
+import { AppleLogoIcon, WindowsLogoIcon, AndroidLogoIcon, LinuxLogoIcon, ShoppingBagOpenIcon, ApplePodcastsLogoIcon } from "@phosphor-icons/react";
+
 import { ServerStackIcon } from "@heroicons/react/24/outline";
 
 import { useState } from "react";
@@ -14,6 +16,7 @@ import AddServer from "./AddServer";
 
 import license from "../../../licenses.txt?raw";
 import ServerBlob from "./ServerBlob";
+import { isApple, os } from "../os";
 
 export default function Settings() {
   const servers = useStateData(ServersState);
@@ -35,58 +38,105 @@ export default function Settings() {
     />
 
     <h1 className="text-lg mb-1">General Settings</h1>
-    <Category
-      title="Servers"
-      description="Configure servers"
-      Icon={ServerStackIcon}
-    >
-      <h1 className="text-lg! mb-2">Server List</h1>
+    <div className="flex flex-col gap-2 w-full">
+      {isApple && <Category
+        title="Development"
+        description="Support for Apple walledMacOS and walledPhoneOS will be considered later."
+        Icon={AppleLogoIcon}
+        openable={false}
+      />}
 
-      <div className="w-full my-2 gap-2">
-        {servers.map((server, i) => (
-          <ServerBlob server={server} index={i} key={`server-${server.url}-${server.name}-${i}`} />
-        ))}
+      {os == "windows" && <Category
+        title="Windows Platform"
+        description="This device is entitled to priority updates and rapid development by the leader of AHQ AI Project."
+        Icon={WindowsLogoIcon}
+        openable={false}
+      />}
 
-        {servers.length == 0 && <span className="text-muted-foreground">No Servers Found...</span>}
-      </div>
+      {os == "android" && <Category
+        title="Android"
+        description="This phone is entitled to priority updates under AHQ Store distribution."
+        Icon={AndroidLogoIcon}
+        openable={false}
+      />}
 
-      <Separator />
+      {os == "linux" && <Category
+        title="Linux"
+        description="Support for linux is considered potentially in future with broken ui until other priority platforms are ready."
+        Icon={LinuxLogoIcon}
+        openable={false}
+      />}
 
-      <div className="w-full flex text-center mt-6">
-        <span className="text-lg my-auto">Add a new server</span>
+      <Category
+        title="Servers"
+        description="Configure servers"
+        Icon={ServerStackIcon}
+      >
+        <h1 className="text-lg! mb-2">Server List</h1>
 
-        <button
-          className="ml-auto flex cursor-pointer items-center gap-1 px-2 py-1 bg-accent dark:bg-neutral-content/20 dark:hover:bg-neutral-content/30 rounded-md"
-          onClick={() => setOpen(true)}
-        >
-          <PlusIcon size={"1.2rem"} />
-          <span>Add</span>
-        </button>
-      </div>
-    </Category >
+        <div className="w-full my-2 gap-2">
+          {servers.map((server, i) => (
+            <ServerBlob server={server} index={i} key={`server-${server.url}-${server.name}-${i}`} />
+          ))}
+
+          {servers.length == 0 && <span className="text-muted-foreground">No Servers Found...</span>}
+        </div>
+
+        <Separator />
+
+        <div className="w-full flex text-center mt-6">
+          <span className="text-lg my-auto">Add a new server</span>
+
+          <button
+            className="ml-auto flex cursor-pointer items-center gap-1 px-2 py-1 bg-accent dark:bg-neutral-content/20 dark:hover:bg-neutral-content/30 rounded-md"
+            onClick={() => setOpen(true)}
+          >
+            <PlusIcon size={"1.2rem"} />
+            <span>Add</span>
+          </button>
+        </div>
+      </Category >
+    </div>
 
     <h1 className="text-lg mt-3 mb-1">About & Attributions</h1>
 
-    <Category
-      title="Licenses"
-      description="Open Sourced Licenses"
-      Icon={ScrollText}
+    <div className="flex flex-col w-full gap-2">
+      <Category
+        title="Evergreen Build"
+        description="This build of AHQ AI is evergreen"
+        Icon={ApplePodcastsLogoIcon}
+        openable={false}
+      />
 
-    >
-      <div className="w-full rounded-lg overflow-x-hidden">
-        <pre
-          className="bg-base-100/60"
-          style={{
-            whiteSpace: 'pre-wrap', // Essential for wrapping
-            wordBreak: 'break-word', // Essential for long URLs
-            fontFamily: 'monospace', // Keeps the text looking like code/documentation
-            padding: '1em',
-          }}
-        >
-          {license}
-        </pre>
-      </div>
-    </Category>
+      <Category
+        title="AHQ Store Build"
+        description="AHQ AI is shipped and updated by the AHQ Store"
+        Icon={ShoppingBagOpenIcon}
+        openable={false}
+      />
+
+      <Category
+        title="Licenses"
+        description="Open Sourced Licenses"
+        Icon={ScrollText}
+
+      >
+        <div className="w-full rounded-lg overflow-x-hidden">
+          <pre
+            className="bg-base-100/60"
+            style={{
+              whiteSpace: 'pre-wrap', // Essential for wrapping
+              wordBreak: 'break-word', // Essential for long URLs
+              fontFamily: 'monospace', // Keeps the text looking like code/documentation
+              padding: '1em',
+            }}
+          >
+            {license}
+          </pre>
+        </div>
+      </Category>
+    </div>
+
 
     <div className="flex flex-col justify-center items-center text-center mt-6 mb-6 text-muted-foreground gap-5">
       <span>AHQ AI<br></br>Licensed under GPLv3</span>
