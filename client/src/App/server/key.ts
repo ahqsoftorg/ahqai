@@ -1,8 +1,8 @@
 import { fetch } from "@tauri-apps/plugin-http";
 import { checkFileIntegrity } from "tauri-plugin-ahqai-api";
 
-const AHQAI_TRUSTED_KEYS_URL = "https://ahq-softwares.github.io/ahq-ai/keys.json";
-const AHQAI_TRUSTED_KEYS_INTEGRITY_URL = "https://ahq-softwares.github.io/ahq-ai/keys.integrity";
+const AHQAI_TRUSTED_KEYS_URL = "https://ahqsoftorg.github.io/ahqai/keys.json";
+const AHQAI_TRUSTED_KEYS_INTEGRITY_URL = "https://ahqsoftorg.github.io/ahqai/keys.integrity";
 
 const TWO_MINS_IN_SECS = 2 * 60;
 

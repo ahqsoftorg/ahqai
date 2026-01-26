@@ -85,7 +85,7 @@ fn decrypt_config() -> RwLock<Config> {
   }
 
   warn!(
-    "No Server Administrator Password found to perform decryption, double check if this is a bug. If it is, create an issue immediately at https://github.com/ahq-softwares/ahq-ai/issues"
+    "No Server Administrator Password found to perform decryption, double check if this is a bug. If it is, create an issue immediately at https://github.com/ahqsoftorg/ahqai/issues"
   );
 
   RwLock::new(CONFIG.clone())

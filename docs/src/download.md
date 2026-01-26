@@ -126,12 +126,12 @@ sidebar: false
   };
 
   (async() => {
-    const releaseData = await fetch("https://api.github.com/repos/ahq-softwares/ahq-ai/releases?per_page=100", {
+    const releaseData = await fetch("https://api.github.com/repos/ahqsoftorg/ahqai/releases?per_page=100", {
       cache: "force-cache"
     })
       .then((d) => d.json());
 
-    const latestClient = await fetch("https://api.github.com/repos/ahq-softwares/ahq-ai/releases/latest", {
+    const latestClient = await fetch("https://api.github.com/repos/ahqsoftorg/ahqai/releases/latest", {
       cache: "force-cache"
     })
       .then((d) => {
@@ -336,7 +336,7 @@ Both are client and server has two types of releases:
 > AHQ AI Client provides a self signed certificate on Windows, which you can install in an **Elevated Powershell** by running the below command.
 >
 > ```powershell
-> (Invoke-WebRequest -Uri "https://ahq-softwares.github.io/ahq-ai/ahqai_win32.crt" -OutFile "$env:TEMP\ahqai-root-ca.crt").Headers | Out-Null; Import-Certificate -FilePath "$env:TEMP\ahqai-root-ca.crt" -CertStoreLocation Cert:\LocalMachine\Root
+> (Invoke-WebRequest -Uri "https://ahqsoftorg.github.io/ahqai/ahqai_win32.crt" -OutFile "$env:TEMP\ahqai-root-ca.crt").Headers | Out-Null; Import-Certificate -FilePath "$env:TEMP\ahqai-root-ca.crt" -CertStoreLocation Cert:\LocalMachine\Root
 > ```
 
 ### Download

@@ -36,7 +36,7 @@
   },
   "bundle": {
     "shortDescription": "AHQ AI",
-    "homepage": "https://ahq-softwares.github.io/ahq-ai",
+    "homepage": "https://ahqsoftorg.github.io/ahqai",
     "active": true,
     "targets": ["deb", "rpm", "msi", "dmg"],
     "icon": [
