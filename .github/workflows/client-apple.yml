@@ -12,6 +12,7 @@ on:
     paths:
       - client/**
       - .github/workflows/client.yml
+      - .github/workflows/client-apple.yml
 
 jobs:
   create:
