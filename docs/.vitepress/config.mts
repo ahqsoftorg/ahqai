@@ -7,9 +7,9 @@ export default defineConfig({
 
   title: "AHQ AI",
   description: "AI, Reimagined",
-  base: "/ahq-ai/",
+  base: "/ahqai/",
   head: [
-    ['link', { rel: 'icon', href: '/ahq-ai/icon.png', type: 'image/png' }],
+    ['link', { rel: 'icon', href: '/ahqai/icon.png', type: 'image/png' }],
   ],
   markdown: {
     config(md) {
@@ -26,7 +26,7 @@ export default defineConfig({
       provider: "local"
     },
     editLink: {
-      pattern: 'https://github.com/ahq-softwares/ahq-ai/edit/main/docs/src/:path'
+      pattern: 'https://github.com/ahqsoftorg/ahqai/edit/main/docs/src/:path'
     },
     footer: {
       copyright: "©AHQ Softwares",
@@ -66,7 +66,7 @@ export default defineConfig({
     ],
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/ahq-softwares/ahq-ai' }
+      { icon: 'github', link: 'https://github.com/ahqsoftorg/ahqai' }
     ]
   }
 })
