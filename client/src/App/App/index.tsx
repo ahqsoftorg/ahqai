@@ -31,6 +31,7 @@ export default function Application() {
 
   const [dialogOpen, setOpeNav] = useState(false);
   const [page, setPage] = useState<AppPage>(AppPage.Chat);
+  const [chatPageData, setChatPageData] = useState<string>("");
 
   const content = useMemo(() => {
     switch (page) {
@@ -66,6 +67,8 @@ export default function Application() {
           <Sidebar
             chats={[]}
             page={page}
+            chatPage={chatPageData}
+            chatPageSet={setChatPageData}
             pageSet={(page) => {
               setOpeNav(false);
               setPage(page);

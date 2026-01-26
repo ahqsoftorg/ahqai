@@ -58,7 +58,7 @@ async function checkServers(val: JSONServer[]): Promise<Server[]> {
     val.map(async (data) => {
       const inst = new HTTPServer(data.url, data.session);
 
-      const flags = await inst.getFlags();
+      const flags = await inst.getFlags(data.session);
 
       return {
         name: data.name,

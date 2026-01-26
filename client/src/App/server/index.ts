@@ -11,15 +11,23 @@ export const supportedServerSemver = ">=0.2.x";
 export const StatusFlags = {
   Unavailable: 2,
   Unauthorized: 4,
-  UnsupportedServerVersion: 8,
-  ChallengeFailed: 16,
-  ExpiresSoon: 32,
+  SessionExpired: 8,
+  UnsupportedServerVersion: 16,
+  ChallengeFailed: 32,
+  ExpiresSoon: 64,
 }
 
 export enum AuthType {
   Unknown,
   OpenToAll,
   Account
+}
+
+interface ServerInformation {
+  version: string;
+  auth: "OpenToAll" | "Account";
+  can_register: boolean;
+  models: { id: string, name: string, capabilities: number }[];
 }
 
 export class HTTPServer {
@@ -31,16 +39,18 @@ export class HTTPServer {
   auth = AuthType.Unknown;
   expiry: Date | undefined = undefined;
 
+  models: { id: string, name: string, capabilities: number }[] = [];
+
   constructor(url: string, session: string) {
     this.url = url, this.session = session;
   }
 
-  async getFlags() {
+  async getFlags(session?: string) {
     const keys = (await getKeys(true)).keys;
 
     this.flags = 0;
 
-    let output;
+    let output: ServerInformation;
     try {
       output = await fetch(`${this.url}/`, {
         connectTimeout: 1000
@@ -52,6 +62,8 @@ export class HTTPServer {
 
       return this.flags;
     }
+
+    this.models = output.models;
 
     this.registration = output.can_register || false;
 
@@ -117,8 +129,35 @@ export class HTTPServer {
 
     // Auth Check
     // TODO: Auth Ping
+    if (!session) {
+      this.flags |= StatusFlags.SessionExpired;
+      return this.flags;
+    }
+
+    try {
+      await this.ping(session);
+    } catch (e) {
+      this.flags |= StatusFlags.SessionExpired;
+    }
 
     return this.flags;
+  }
+
+  /**
+   * Throws on error
+   * @param session
+   */
+  async ping(session: string) {
+    this.session = await fetch(`${this.url}/me`, {
+      method: "POST",
+      body: session
+    }).then((d) => {
+      if (!d.ok) {
+        throw new Error("Invalid Credentials");
+      }
+
+      return d.text();
+    });
   }
 
   /**

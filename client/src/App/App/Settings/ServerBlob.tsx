@@ -26,6 +26,16 @@ export default function ServerBlob({ server, index }: { server: ServerType, inde
         </Alert>
       );
     }
+
+    if ((flags & (StatusFlags.SessionExpired)) > 0) {
+      err.push(
+        <Alert variant="destructive">
+          <AlertTriangleIcon />
+          <AlertTitle>Session Expired</AlertTitle>
+          <AlertDescription>Please re authenticate.</AlertDescription>
+        </Alert>
+      );
+    }
     if ((flags & (StatusFlags.ExpiresSoon)) > 0) {
       err.push(
         <Alert>
@@ -71,7 +81,9 @@ export default function ServerBlob({ server, index }: { server: ServerType, inde
   const icon = useMemo(() => {
     const flags = server.instance.flags;
 
-    if ((flags & (StatusFlags.Unavailable)) > 0) {
+    if ((flags & (StatusFlags.SessionExpired)) > 0) {
+      return <CloudSlashIcon className="size-8 text-error" />;
+    } else if ((flags & (StatusFlags.Unavailable)) > 0) {
       return <CloudSlashIcon className="size-8 text-warning" />;
     } else if ((flags & (StatusFlags.Unauthorized)) > 0) {
       return <CloudXIcon className="size-8 text-error" />;

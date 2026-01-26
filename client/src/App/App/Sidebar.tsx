@@ -12,9 +12,22 @@ interface SidebarProps {
   chats: Chat[];
   page: AppPage;
   pageSet: (prop: AppPage) => void;
+  chatPage: string;
+  chatPageSet: (prop: string) => void;
 }
 
-export default function Sidebar({ chats, page, pageSet }: SidebarProps) {
+export default function Sidebar({ chats: chatsss, page, pageSet, chatPage, chatPageSet }: SidebarProps) {
+  const chats: Chat[] = [
+    {
+      content: "Hello World",
+      id: "asf6f"
+    },
+    {
+      content: "HOw to become a millionare in 28seconds and 30mins and 1200000days",
+      id: "asf6f"
+    }
+  ];
+
   return <div className="w-full h-full px-3 py-2 gap-1 flex flex-col overflow-y-scroll overflow-x-clip">
     <SidebarItem
       text="New Chat"
@@ -36,7 +49,7 @@ export default function Sidebar({ chats, page, pageSet }: SidebarProps) {
 
     <Separator />
 
-    <div className="h-full flex flex-col w-full">
+    <div className="h-full flex flex-col w-full gap-1">
       <div className="text-muted-foreground select-none ml-2">
         Chats
       </div>
@@ -44,8 +57,12 @@ export default function Sidebar({ chats, page, pageSet }: SidebarProps) {
       {chats.map((data) => (
         <SidebarItem
           text={data.content}
-          isActive={page == AppPage.ChatPage}
+          isActive={page == AppPage.ChatPage && chatPage == data.id}
           Icon={MessageCircle}
+          activated={() => {
+            chatPageSet(data.id);
+            pageSet(AppPage.ChatPage);
+          }}
           key={data.id}
         />
       ))}
@@ -55,14 +72,14 @@ export default function Sidebar({ chats, page, pageSet }: SidebarProps) {
 
     <Separator />
 
-    <SidebarItem
+    {/* <SidebarItem
       text="Admin Portal"
       Icon={ShieldUser}
       isActive={page == AppPage.Admin}
       activated={() => {
         pageSet(AppPage.Admin);
       }}
-    />
+    /> */}
 
     <SidebarItem
       text="Settings"
