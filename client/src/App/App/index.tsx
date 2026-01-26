@@ -45,7 +45,11 @@ export default function Application() {
   }, [page]);
 
   if (tab) {
-    return <ApplicationDesktop page={page} content={content} pageSet={(page) => setPage(page)} />;
+    return <ApplicationDesktop chatPage={chatPageData}
+      chatPageSet={setChatPageData}
+      page={page} content={content}
+      pageSet={(page) => setPage(page)}
+    />;
   }
 
   // Use a hamburger sidebar
@@ -95,10 +99,12 @@ export default function Application() {
 interface Props {
   page: AppPage;
   pageSet: (page: AppPage) => void;
-  content: ReactNode | ReactNode[]
+  content: ReactNode | ReactNode[];
+  chatPageData: string;
+  setChatPageData: (page: string) => void;
 }
 
-export function ApplicationDesktop({ pageSet, page, content }: Props) {
+export function ApplicationDesktop({ pageSet, page, content, chatPageData, setChatPageData }: Props) {
   const lg = useMediaQuery("(min-width: 1024px)");
 
   const { min, max, def } = useMemo(() => {
@@ -133,6 +139,9 @@ export function ApplicationDesktop({ pageSet, page, content }: Props) {
         chats={[]}
         page={page}
         pageSet={pageSet}
+        chatPage={chatPageData}
+        chatPageSet={setChatPageData}
+
       />
     </ResizablePanel>
 
