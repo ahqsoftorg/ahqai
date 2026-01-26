@@ -1,0 +1,39 @@
+name: Request iOS build
+
+on:
+  create:
+    branches:
+      - client-v*
+
+  push:
+    branches:
+      - main
+
+    paths:
+      - client/**
+      - .github/workflows/client.yml
+
+jobs:
+  create:
+    name: Create Release
+
+    runs-on: ubuntu-latest
+
+    # ${{ github.ref_name == 'main' }}
+
+    steps:
+      - name: Decode the GitHub App Private Key
+        id: decode
+        run: |
+          private_key=$(echo "${{ secrets.AHQAI_PRIVATE_KEY }}" | base64 -d | awk 'BEGIN {ORS="\\n"} {print}' | head -c -2) &> /dev/null
+          echo "::add-mask::$private_key"
+          echo "private-key=$private_key" >> "$GITHUB_OUTPUT"
+
+      - name: Generate GitHub App Token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ steps.decode.outputs.private-key }}
+          owner: ahqsoftorg
+          repositories: ahqai,ahqai-apple
