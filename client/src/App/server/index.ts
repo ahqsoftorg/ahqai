@@ -25,7 +25,7 @@ export enum AuthType {
 export class HTTPServer {
   url: string;
   session: string;
-  flags: number = StatusFlags.Unavailable;
+  flags: number = 0;
 
   registration = false;
   auth = AuthType.Unknown;
@@ -38,7 +38,7 @@ export class HTTPServer {
   async getFlags() {
     const keys = (await getKeys(true)).keys;
 
-    let out = 0;
+    this.flags = 0;
 
     let output;
     try {
@@ -48,16 +48,16 @@ export class HTTPServer {
         .then((d) => d.json());
     } catch (e) {
       console.warn(e);
-      out |= StatusFlags.Unavailable;
+      this.flags |= StatusFlags.Unavailable;
 
-      return out;
+      return this.flags;
     }
 
     this.registration = output.can_register || false;
 
     const versionKey = `v${output.version}`;
 
-    if (!keys[versionKey]) out |= StatusFlags.ChallengeFailed;
+    if (!keys[versionKey]) this.flags |= StatusFlags.ChallengeFailed;
 
     if (keys[versionKey]) {
       const pubkey = keys[versionKey].pubkey;
@@ -67,7 +67,7 @@ export class HTTPServer {
         const date = parse(expiry, 'EEE, dd MMM yyyy HH:mm:ss \'GMT\'', new Date());
 
         this.expiry = date;
-        out |= StatusFlags.ExpiresSoon;
+        this.flags |= StatusFlags.ExpiresSoon;
       }
 
       const data = new Uint8Array(256);
@@ -88,10 +88,10 @@ export class HTTPServer {
         .then((d) => d.arrayBuffer())
         .catch(() => new ArrayBuffer());
 
-      if (!(await checkServerIntegrity(data.buffer, signature, pkey))) out |= StatusFlags.ChallengeFailed;
+      if (!(await checkServerIntegrity(data.buffer, signature, pkey))) this.flags |= StatusFlags.ChallengeFailed;
     }
 
-    if (!satisfies(output.version, supportedServerSemver)) out |= StatusFlags.UnsupportedServerVersion;
+    if (!satisfies(output.version, supportedServerSemver)) this.flags |= StatusFlags.UnsupportedServerVersion;
 
     this.auth = (() => {
       switch (output.auth as string) {
@@ -106,21 +106,19 @@ export class HTTPServer {
     })();
 
     if (this.auth == AuthType.Unknown) {
-      out |= StatusFlags.Unauthorized;
+      this.flags |= StatusFlags.Unauthorized;
 
-      return out;
+      return this.flags;
     }
 
     if (this.auth == AuthType.OpenToAll) {
-      return out;
+      return this.flags;
     }
 
     // Auth Check
     // TODO: Auth Ping
 
-    this.flags = out;
-
-    return out;
+    return this.flags;
   }
 
   /**

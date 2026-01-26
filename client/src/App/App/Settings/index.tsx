@@ -41,7 +41,7 @@ export default function Settings() {
     <div className="flex flex-col gap-2 w-full">
       {isApple && <Category
         title="Development"
-        description="Support for Apple walledMacOS and walledPhoneOS will be considered later."
+        description="Support for Apple macOS and iOS will be considered later. Active development is in progress."
         Icon={AppleLogoIcon}
         openable={false}
       />}
@@ -107,6 +107,7 @@ export default function Settings() {
         Icon={ApplePodcastsLogoIcon}
         openable={false}
       />
+
 
       <Category
         title="AHQ Store Build"
