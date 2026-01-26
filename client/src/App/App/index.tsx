@@ -45,8 +45,9 @@ export default function Application() {
   }, [page]);
 
   if (tab) {
-    return <ApplicationDesktop chatPage={chatPageData}
-      chatPageSet={setChatPageData}
+    return <ApplicationDesktop
+      chatPageData={chatPageData}
+      setChatPageData={setChatPageData}
       page={page} content={content}
       pageSet={(page) => setPage(page)}
     />;

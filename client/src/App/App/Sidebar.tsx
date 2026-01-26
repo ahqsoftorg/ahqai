@@ -1,5 +1,5 @@
 import { Separator } from "@/components/ui/separator";
-import { MessageCircleDashed, MessageCircle, Settings, ShieldUser, LucideProps } from "lucide-react";
+import { MessageCircleDashed, MessageCircle, Settings, /*ShieldUser,*/ LucideProps } from "lucide-react";
 import { ForwardRefExoticComponent, RefAttributes } from "react";
 import { AppPage } from ".";
 
@@ -16,8 +16,8 @@ interface SidebarProps {
   chatPageSet: (prop: string) => void;
 }
 
-export default function Sidebar({ chats: chatsss, page, pageSet, chatPage, chatPageSet }: SidebarProps) {
-  const chats: Chat[] = [
+export default function Sidebar({ chats: chats, page, pageSet, chatPage, chatPageSet }: SidebarProps) {
+  chats = [
     {
       content: "Hello World",
       id: "asf6f"
