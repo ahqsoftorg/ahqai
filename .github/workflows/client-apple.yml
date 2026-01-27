@@ -37,11 +37,13 @@ jobs:
           owner: ahqsoftorg
           repositories: ahqai,ahqai-apple
           permission-actions: write
+          permission-contents: write
 
       - name: Request iOS build (Release)
         uses: actions/github-script@v7
-        if: ${{ github.ref_name == 'main' }}
+        if: ${{ github.ref_name != 'main' }}
         with:
+          github-token: ${{ steps.app-token.outputs.token }}
           script: |
             await octokit.rest.actions.createWorkflowDispatch({
               owner: "${{ github.repository_owner }}",
@@ -56,8 +58,9 @@ jobs:
 
       - name: Request iOS build (Debug)
         uses: actions/github-script@v7
-        if: ${{ github.ref_name != 'main' }}
+        if: ${{ github.ref_name == 'main' }}
         with:
+          github-token: ${{ steps.app-token.outputs.token }}
           script: |
             await octokit.rest.actions.createWorkflowDispatch({
               owner: "${{ github.repository_owner }}",
