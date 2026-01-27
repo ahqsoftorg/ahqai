@@ -40,6 +40,8 @@
         }
       ]
     },
-    "ahqai:default"
+    "ahqai:default",
+    "sql:default",
+    "sql:allow-execute"
   ]
 }

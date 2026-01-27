@@ -1,9 +1,16 @@
 #[cfg(desktop)]
 use tauri::Manager;
 
+mod sql;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let builder = tauri::Builder::default()
+        .plugin(
+            tauri_plugin_sql::Builder::new()
+                .add_migrations("sqlite:messages.db", sql::migrations())
+                .build()
+        )
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_ahqai::init());

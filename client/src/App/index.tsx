@@ -4,8 +4,11 @@ import Splash from "./Splash";
 
 import { ThemeContext } from "./theme";
 import { initStore } from "./store";
-import Application from "./App";
 import { getKeys } from "./server/key";
+import { chatdb } from "./store/db/chats";
+
+import Application from "./App";
+
 
 export const PageId = {
   Splash: 0,
@@ -29,6 +32,8 @@ export default function App() {
           console.error(e);
           showDangerScreen(true);
         }
+
+        await chatdb.get();
 
         setTimeout(() => {
           setPage(PageId.Home);

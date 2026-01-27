@@ -1,17 +1,12 @@
 [package]
 name = "ahqai"
 version = "0.1.0"
-description = "AHQ AI"
-authors = ["A. Chakraborty", "AHQ AI"]
+description = "AHQ AI Client - Seamless connect to multiple servers and keep chatting"
+authors = ["A. Chakraborty", "AHQ AI Contributors", "AHQ Softwares' Team"]
 license = "GPL-3.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [lib]
-# The `_lib` suffix may seem redundant but it is necessary
-# to make the lib name unique and wouldn't conflict with the bin name.
-# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
 name = "ahqai_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
@@ -30,6 +25,7 @@ tauri-plugin-dialog = "2"
 tauri-plugin-os = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-ahqai = { version = "0.1.0", path = "../src-plugin" }
+tauri-plugin-sql = { version = "2", features = ["sqlite"] }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-single-instance = "2"

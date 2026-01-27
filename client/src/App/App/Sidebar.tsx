@@ -24,7 +24,7 @@ export default function Sidebar({ chats: chats, page, pageSet, chatPage, chatPag
     },
     {
       content: "HOw to become a millionare in 28seconds and 30mins and 1200000days",
-      id: "asf6f"
+      id: "asf7f"
     }
   ];
 
