@@ -37,7 +37,6 @@ jobs:
           owner: ahqsoftorg
           repositories: ahqai,ahqai-apple
           permission-actions: write
-          permission-contents: write
 
       - name: Request iOS build (Release)
         uses: actions/github-script@v7
