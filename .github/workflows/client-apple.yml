@@ -36,6 +36,7 @@ jobs:
           private-key: ${{ steps.decode.outputs.private-key }}
           owner: ahqsoftorg
           repositories: ahqai,ahqai-apple
+          permission-actions: write
 
       - name: Request iOS build (Release)
         uses: actions/github-script@v7
