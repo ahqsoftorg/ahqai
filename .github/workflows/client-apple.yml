@@ -50,7 +50,7 @@ jobs:
               workflow_id: 227072908,
               ref: "main",
               inputs: {
-                release: true,
+                release: "true", 
                 ref: "${{ github.ref_name }}"
               }
             });
@@ -67,7 +67,7 @@ jobs:
               workflow_id: 227072908,
               ref: "main",
               inputs: {
-                release: false,
+                release: "false",
                 ref: "${{ github.ref_name }}"
               }
             });
