@@ -1,4 +1,4 @@
-name: Request iOS build
+name: Request apple builds
 
 on:
   create:
@@ -38,7 +38,7 @@ jobs:
           repositories: ahqai,ahqai-apple
           permission-actions: write
 
-      - name: Request iOS build (Release)
+      - name: Request apple build (Release)
         uses: actions/github-script@v7
         if: ${{ github.ref_name != 'main' }}
         with:
@@ -55,7 +55,7 @@ jobs:
               }
             });
 
-      - name: Request iOS build (Debug)
+      - name: Request apple build (Debug)
         uses: actions/github-script@v7
         if: ${{ github.ref_name == 'main' }}
         with:
