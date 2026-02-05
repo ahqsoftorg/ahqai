@@ -2,31 +2,17 @@ import { Separator } from "@/components/ui/separator";
 import { MessageCircleDashed, MessageCircle, Settings, /*ShieldUser,*/ LucideProps } from "lucide-react";
 import { ForwardRefExoticComponent, RefAttributes } from "react";
 import { AppPage } from ".";
-
-interface Chat {
-  content: string;
-  id: string;
-}
+import { Chat } from "../store/db/chats";
 
 interface SidebarProps {
-  chats: Chat[];
   page: AppPage;
   pageSet: (prop: AppPage) => void;
-  chatPage: string;
-  chatPageSet: (prop: string) => void;
+  chatPage: number | undefined;
+  chatPageSet: (prop: number) => void;
 }
 
-export default function Sidebar({ chats: chats, page, pageSet, chatPage, chatPageSet }: SidebarProps) {
-  chats = [
-    {
-      content: "Hello World",
-      id: "asf6f"
-    },
-    {
-      content: "HOw to become a millionare in 28seconds and 30mins and 1200000days",
-      id: "asf7f"
-    }
-  ];
+export default function Sidebar({ page, pageSet, chatPage, chatPageSet }: SidebarProps) {
+  const chats = [] as Chat[];
 
   return <div className="w-full h-full px-3 py-2 gap-1 flex flex-col overflow-y-scroll overflow-x-clip">
     <SidebarItem
@@ -56,7 +42,7 @@ export default function Sidebar({ chats: chats, page, pageSet, chatPage, chatPag
 
       {chats.map((data) => (
         <SidebarItem
-          text={data.content}
+          text={data.title}
           isActive={page == AppPage.ChatPage && chatPage == data.id}
           Icon={MessageCircle}
           activated={() => {

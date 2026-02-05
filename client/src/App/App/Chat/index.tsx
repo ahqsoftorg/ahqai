@@ -1,4 +1,6 @@
 import ctrlOrCmd from "@/App/server/kbd";
+import { ChatInstance } from "@/App/store/db/chats";
+
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from "@/components/ui/input-group";
 import { Separator } from "@/components/ui/separator";
@@ -7,9 +9,57 @@ import { UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow"
 
 import { ArrowUp, ChevronLeft, ChevronRight, Image, Plus } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, use, useEffect, useMemo, useRef, useState } from "react";
 
-export default function Chat() {
+export interface ChatProps {
+  newChat: boolean;
+  temporary: boolean;
+  chatId?: number;
+}
+
+interface InternalProps {
+  chat: Promise<ChatInstance>
+}
+
+export default function Chat(props: ChatProps) {
+  const chatctx = useMemo(() => {
+    if (props.temporary) {
+      return (async () => {
+        const c = new ChatInstance();
+        await c.init("temporary");
+        return c;
+      })();
+    }
+
+    if (props.newChat || !props.chatId) {
+      return (async () => {
+        const c = new ChatInstance();
+        await c.init(undefined);
+        return c;
+      })();
+    }
+
+    return (async () => {
+      const c = new ChatInstance();
+      await c.init(props.chatId);
+      return c;
+    })();
+  }, [props]);
+
+  return <Suspense fallback={<Loading />}>
+    <ChatLayout chat={chatctx} />
+  </Suspense>
+}
+
+function Loading() {
+  return <div className="w-full h-full flex flex-col justify-center text-center align-center">
+    <span className="dui-loading dui-loading-dots dui-loading-xl block mx-auto" />
+  </div>;
+}
+
+function ChatLayout(props: InternalProps) {
+  use(props.chat);
+
   const scrollable = useRef<HTMLDivElement | null>(null);
 
   const [scrolled, setScroll] = useState(0);
@@ -55,7 +105,7 @@ export default function Chat() {
   }, [scrollable]);
 
   return <div className="w-full h-full flex flex-col gap-1 md:pb-5">
-    <div className="h-full w-full">
+    <div className="h-full w-full overflow-y-scroll">
 
     </div>
 
@@ -77,26 +127,13 @@ export default function Chat() {
         <InputGroupAddon
           ref={scrollable}
           align="block-start"
-          className="cursor-default overflow-y-hidden overflow-x-scroll transition-all min-h-25!"
+          className="cursor-default overflow-y-hidden overflow-x-scroll transition-all min-h-25! hidden"
         >
-          <div className="min-h-20 max-h-20 max-w-20 min-w-20 bg-black/70 rounded-lg" />
-          <div className="min-h-20 max-h-20 max-w-20 min-w-20 bg-black rounded-lg" />
-          <div className="min-h-20 max-h-20 max-w-20 min-w-20 bg-black rounded-lg" />
-          <div className="min-h-20 max-h-20 max-w-20 min-w-20 bg-black rounded-lg" />
-          <div className="min-h-20 max-h-20 max-w-20 min-w-20 bg-black rounded-lg" />
-          <div className="min-h-20 max-h-20 max-w-20 min-w-20 bg-black rounded-lg" />
-          <div className="min-h-20 max-h-20 max-w-20 min-w-20 bg-black rounded-lg" />
-          <div className="min-h-20 max-h-20 max-w-20 min-w-20 bg-black rounded-lg" />
-          <div className="min-h-20 max-h-20 max-w-20 min-w-20 bg-black rounded-lg" />
-          <div className="min-h-20 max-h-20 max-w-20 min-w-20 bg-black rounded-lg" />
-          <div className="min-h-20 max-h-20 max-w-20 min-w-20 bg-black rounded-lg" />
-          <div className="min-h-20 max-h-20 max-w-20 min-w-20 bg-black rounded-lg" />
-          <div className="min-h-20 max-h-20 max-w-20 min-w-20 bg-black rounded-lg" />
           <div className="min-h-20 max-h-20 max-w-20 min-w-20 bg-black rounded-lg" />
         </InputGroupAddon>
         <InputGroupAddon
           align="block-start"
-          className="cursor-default my-auto flex px-5 absolute"
+          className="cursor-default my-auto flex px-5 absolute hidden"
         >
           <InputGroupButton
             variant="default"

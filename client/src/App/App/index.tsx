@@ -31,14 +31,18 @@ export default function Application() {
 
   const [dialogOpen, setOpeNav] = useState(false);
   const [page, setPage] = useState<AppPage>(AppPage.Chat);
-  const [chatPageData, setChatPageData] = useState<string>("");
+  const [chatPageData, setChatPageData] = useState<number | undefined>();
 
   const content = useMemo(() => {
     switch (page) {
       case AppPage.Settings:
         return <Settings />
       case AppPage.Chat:
-        return <Chat />
+        return <Chat newChat={true} temporary={false} />;
+      case AppPage.Diposable:
+        return <Chat newChat={true} temporary={true} />;
+      case AppPage.ChatPage:
+        return <Chat newChat={false} temporary={false} chatId={chatPageData} />;
       default:
         return <>Hi</>;
     }
@@ -70,7 +74,7 @@ export default function Application() {
           </SheetHeader>
 
           <Sidebar
-            chats={[]}
+
             page={page}
             chatPage={chatPageData}
             chatPageSet={setChatPageData}
@@ -101,8 +105,8 @@ interface Props {
   page: AppPage;
   pageSet: (page: AppPage) => void;
   content: ReactNode | ReactNode[];
-  chatPageData: string;
-  setChatPageData: (page: string) => void;
+  chatPageData: number | undefined;
+  setChatPageData: (page: number) => void;
 }
 
 export function ApplicationDesktop({ pageSet, page, content, chatPageData, setChatPageData }: Props) {
@@ -137,7 +141,6 @@ export function ApplicationDesktop({ pageSet, page, content, chatPageData, setCh
       className="h-full w-full"
     >
       <Sidebar
-        chats={[]}
         page={page}
         pageSet={pageSet}
         chatPage={chatPageData}

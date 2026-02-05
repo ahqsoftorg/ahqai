@@ -2,10 +2,14 @@ import Database from "@tauri-apps/plugin-sql";
 
 // TODO: Rewrite in rust once app becomes slow
 class ChatDatabase {
-  private static db: Database;
+  static db: Database;
+  private static inprog = false;
 
   async get() {
+    if (ChatDatabase.inprog) { return; }
+
     if (!ChatDatabase.db) {
+      ChatDatabase.inprog = true;
       ChatDatabase.db = await Database.load("sqlite:messages.db");
 
       const db = ChatDatabase.db;
@@ -16,10 +20,10 @@ class ChatDatabase {
       await db.execute("PRAGMA foreign_keys = ON;");
     }
 
-    const chatid = await this.newchat("Hello world", "");
-    console.log(await this.fetchchat(chatid));
-    await this.listchats();
-    await this.deletechat(chatid);
+    // const chatid = await this.newchat("Hello world", "");
+    // console.log(await this.fetchchat(chatid));
+    // await this.listchats();
+    // await this.deletechat(chatid);
   }
 
   async newchat(title: string, metadata: string): Promise<number> {
@@ -49,7 +53,7 @@ class ChatDatabase {
     }
   }
 
-  async enforceChatLimit(limit: number = 120) {
+  private async enforceChatLimit(limit: number = 120) {
     const db = ChatDatabase.db;
 
     // This query deletes chats that are not in the 'newest' set
@@ -59,8 +63,7 @@ class ChatDatabase {
       SELECT id FROM CHATS
       ORDER BY created_at DESC
       LIMIT $1
-    );
-  `, [limit]);
+    );`, [limit]);
   }
 
   async listchats(): Promise<number[]> {
@@ -73,21 +76,15 @@ class ChatDatabase {
     return output;
   }
 
-  async fetchchat(id: number): Promise<Chat | undefined> {
+  async fetchchat(id: number): Promise<ChatInstance | undefined> {
     const db = ChatDatabase.db;
+    const rows = await db.select<Chat[]>("SELECT * FROM CHATS WHERE id=$1", [id]);
 
-    const output = await db.select<Chat[] | undefined>("SELECT * FROM CHATS WHERE id=$1", [id]);
+    if (!rows || rows.length === 0) return undefined;
 
-    return output?.[0];
-  }
-
-  async deletechat(id: number) {
-    const db = ChatDatabase.db;
-
-    await db.execute(`
-      DELETE FROM CHATS
-      WHERE id=$1;
-    `, [id]);
+    const instance = new ChatInstance();
+    await instance.init(rows[0]);
+    return instance;
   }
 }
 
@@ -109,7 +106,110 @@ export interface Message {
   updated_at: string
 }
 
-export class ChatInstance {
-  messages: Message[] = [];
+export interface MessageData {
+  responder: string,
+  content: string,
+}
 
+export class ChatInstance {
+  cache = {
+    // message ids in order
+    messages: [] as number[],
+    msgMap: {} as { [key: number]: Message }
+  };
+  chat_id: number | undefined | "temporary" = undefined;
+  chat: Chat | undefined = undefined;
+  db = ChatDatabase.db;
+
+  async init(ch: Chat | number | "temporary" | undefined) {
+    const db = ChatDatabase.db;
+
+    if (ch === 'temporary') {
+      this.chat_id = "temporary";
+      return;
+    }
+
+    if (ch === undefined) return;
+
+    if (typeof (ch) == 'number') {
+      this.chat_id = ch;
+      this.chat = (await db.select<Chat[]>("SELECT * FROM CHATS WHERE id=$1", [ch]))[0]!!;
+      await this.loadMsgs();
+    }
+
+    if (typeof (ch) == 'object') {
+      this.chat_id = ch.id;
+      this.chat = ch;
+      await this.loadMsgs();
+    }
+  }
+
+  private async loadMsgs() {
+    const db = ChatDatabase.db;
+    this.cache.messages = (await db.select<{ id: number }[]>("SELECT id FROM MESSAGES WHERE chat_id=$1", [this.chat_id])).map((({ id }) => id));
+  }
+
+  async insertMessage(msg: MessageData) {
+    if (this.chat_id == "temporary") {
+      const mid = this.cache.messages.length;
+
+      this.cache.msgMap[mid] = {
+        chat_id: 0,
+        content: msg.content,
+        responder: msg.responder,
+        created_at: new Date().toDateString(),
+        id: mid,
+        updated_at: new Date().toDateString()
+      };
+      this.cache.messages.push(mid);
+      return;
+    }
+
+    if (!this.chat_id) {
+      const chatid = await chatdb.newchat(msg.content, "");
+
+      this.chat_id = chatid;
+      this.chat = {
+        created_at: new Date().toDateString(),
+        metadata: "",
+        id: chatid,
+        title: msg.content
+      };
+    }
+
+    const msgid = (await this.db.execute(`
+      INSERT INTO MESSAGES (chat_id, responder, content)
+      VALUES ($1, $2, $3);
+    `, [this.chat_id!!, msg.responder, msg.content])).lastInsertId!!;
+
+    this.cache.messages.push(msgid);
+  }
+
+  async getMessage(id: number) {
+    if (this.cache.msgMap[id]) {
+      return this.cache.msgMap[id];
+    }
+
+    const db = ChatDatabase.db;
+
+    const msg = (await db.select<Message[]>("SELECT * FROM MESSAGES WHERE id=$1", [id]))[0]!!;
+
+    this.cache.msgMap[id] = msg;
+
+    return msg;
+  }
+
+  async deletechat(id: number) {
+    const db = ChatDatabase.db;
+
+    await db.execute(`
+      DELETE FROM CHATS
+      WHERE id=$1;
+    `, [id]);
+  }
+
+  cleanup() {
+    this.cache.messages = [];
+    this.cache.msgMap = {};
+  }
 }

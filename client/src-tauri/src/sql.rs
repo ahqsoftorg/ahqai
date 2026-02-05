@@ -7,6 +7,12 @@ pub fn migrations() -> Vec<Migration> {
       description: "create_tables",
       sql: include_str!("./migrations/v1.sql"),
       kind: MigrationKind::Up,
+    },
+    Migration {
+      version: 2,
+      description: "update_indexing",
+      sql: include_str!("./migrations/v2.sql"),
+      kind: MigrationKind::Up,
     }
   ]
 }
