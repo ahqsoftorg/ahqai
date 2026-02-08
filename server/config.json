@@ -22,12 +22,7 @@
     }
   },
   "authentication": {
-    "kind": "Account",
-    "registration_allowed": true,
-    "max_memory": 64,
-    "time_cost": 5,
-    "session_expiry_days": 30,
-    "hash_bytes": 32
+    "kind": "OpenToAll"
   },
   "database": {
     "authdb": {

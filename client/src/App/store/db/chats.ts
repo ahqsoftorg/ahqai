@@ -101,6 +101,7 @@ export interface Message {
   id: number,
   chat_id: number,
   responder: string,
+  metadata: string,
   content: string,
   created_at: string,
   updated_at: string
@@ -109,6 +110,7 @@ export interface Message {
 export interface MessageData {
   responder: string,
   content: string,
+  metadata: string,
 }
 
 export class ChatInstance {
@@ -156,6 +158,7 @@ export class ChatInstance {
       this.cache.msgMap[mid] = {
         chat_id: 0,
         content: msg.content,
+        metadata: msg.metadata,
         responder: msg.responder,
         created_at: new Date().toDateString(),
         id: mid,
@@ -178,9 +181,9 @@ export class ChatInstance {
     }
 
     const msgid = (await this.db.execute(`
-      INSERT INTO MESSAGES (chat_id, responder, content)
-      VALUES ($1, $2, $3);
-    `, [this.chat_id!!, msg.responder, msg.content])).lastInsertId!!;
+      INSERT INTO MESSAGES (chat_id, responder, content, metadata)
+      VALUES ($1, $2, $3, $4);
+    `, [this.chat_id!!, msg.responder, msg.content, msg.metadata])).lastInsertId!!;
 
     this.cache.messages.push(msgid);
   }

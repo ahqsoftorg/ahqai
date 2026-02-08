@@ -5,6 +5,7 @@ import { getKeys } from "./key";
 import { parse } from "date-fns"
 
 import { checkServerIntegrity } from "tauri-plugin-ahqai-api"
+import { AIWSChat } from "./ws";
 
 export const supportedServerSemver = ">=0.2.x";
 
@@ -40,6 +41,8 @@ export class HTTPServer {
   expiry: Date | undefined = undefined;
 
   models: { id: string, name: string, capabilities: number }[] = [];
+
+  usable = true;
 
   constructor(url: string, session: string) {
     this.url = url, this.session = session;
@@ -128,19 +131,31 @@ export class HTTPServer {
     }
 
     // Auth Check
-    // TODO: Auth Ping
     if (!session) {
       this.flags |= StatusFlags.SessionExpired;
+
+      this.usable = false;
+
       return this.flags;
     }
 
     try {
       await this.ping(session);
+      this.usable = false;
     } catch (e) {
       this.flags |= StatusFlags.SessionExpired;
     }
 
     return this.flags;
+  }
+
+  /**
+   * Get a handle to a AIWSChat
+   * @param model The model to use
+   * @returns {AIWSChat}
+   */
+  getWSCLass(model: string): AIWSChat {
+    return new AIWSChat(this.session, this.url, model);
   }
 
   /**

@@ -1,5 +1,8 @@
 import ctrlOrCmd from "@/App/server/kbd";
 import { ChatInstance } from "@/App/store/db/chats";
+import { ServersState } from "@/App/store/db/servers";
+import useStateData from "@/App/store/state";
+import { Button } from "@/components/ui/button";
 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from "@/components/ui/input-group";
@@ -8,8 +11,10 @@ import { UnlistenFn } from "@tauri-apps/api/event";
 
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow"
 
-import { ArrowUp, ChevronLeft, ChevronRight, Image, Plus } from "lucide-react";
-import { Suspense, use, useEffect, useMemo, useRef, useState } from "react";
+import { ArrowUp, ChevronLeft, ChevronRight, Image, Plus, PodcastIcon, NetworkIcon, Package } from "lucide-react";
+import React, { Suspense, use, useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+import { toast } from "sonner";
 
 export interface ChatProps {
   newChat: boolean;
@@ -58,13 +63,18 @@ function Loading() {
 }
 
 function ChatLayout(props: InternalProps) {
-  use(props.chat);
+  const chatinterface = use(props.chat);
 
   const scrollable = useRef<HTMLDivElement | null>(null);
-
   const [scrolled, setScroll] = useState(0);
   const [width, setWidth] = useState(0);
 
+  const serverList = useStateData(ServersState);
+
+  const [connection, setConnection] = useState<string | "connecting" | undefined>(undefined);
+  const [selection, setSelection] = useState<string | undefined>();
+
+  // TODO: Side Effects
   useEffect(() => {
     let ev: UnlistenFn;
     try {
@@ -97,12 +107,30 @@ function ChatLayout(props: InternalProps) {
     }
   }, []);
 
+  // Scroll
   useEffect(() => {
     setWidth(scrollable.current!!.scrollWidth - scrollable.current!!.clientWidth);
     scrollable.current!!.addEventListener("scroll", () => {
       setScroll(Math.round(scrollable.current!!.scrollLeft));
     });
   }, [scrollable]);
+
+  const onSelectConnect = useCallback(() => {
+    setConnection("connecting");
+    // toast("Connecting...", { position: "top-right", duration: Infinity });
+    toast.promise<{ name: string }>(
+      () =>
+        new Promise((resolve) =>
+          setTimeout(() => resolve({ name: "Event" }), 2000)
+        ),
+      {
+        position: "top-right",
+        loading: "Loading...",
+        success: (data) => `${data.name} has been created`,
+        error: "Error",
+      }
+    );
+  }, [selection]);
 
   return <div className="w-full h-full flex flex-col gap-1 md:pb-5">
     <div className="h-full w-full overflow-y-scroll">
@@ -112,10 +140,12 @@ function ChatLayout(props: InternalProps) {
     <div className="w-full items-center text-center justify-center flex">
       <InputGroup className="w-full rounded-none sm:rounded-md max-h-64 md:min-w-120 sm:max-w-[75%]">
         <InputGroupTextarea
-          onPaste={() => {
-
+          disabled={typeof (connection) != "object"}
+          onPaste={(data) => {
+            console.log(data.clipboardData.files);
+            alert("Paste!!");
           }}
-          placeholder="Ask, Converse or Chat about a topic..."
+          placeholder={typeof (connection) != "object" ? "Connect to chat with AI" : "Ask, Converse or Chat about a topic..."}
           onKeyDown={(e) => {
             if (!e.shiftKey && e.key == 'Enter') {
               e.preventDefault();
@@ -167,70 +197,141 @@ function ChatLayout(props: InternalProps) {
         </InputGroupAddon>
 
         <InputGroupAddon align="block-end" className="cursor-default">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <InputGroupButton
+          {connection === undefined &&
+            <>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <InputGroupButton
+                    variant="outline"
+                    className="rounded-lg"
+                  >
+                    {selection ?
+                      <>
+                        <Package />
+                        {serverList[Number(selection.split("-")[0])].instance.models[Number(selection.split("-")[1])].name}
+                      </>
+                      :
+                      "Select model"
+                    }
+                  </InputGroupButton>
+                </DropdownMenuTrigger>
+
+                {/* Model Select */}
+                <DropdownMenuContent
+                  side="top"
+                  align="start"
+                  className="rounded-md"
+                >
+                  <DropdownMenuRadioGroup value={selection} onValueChange={setSelection}>
+                    {
+                      serverList.map((server, index) => (
+                        <React.Fragment key={`${server.url}-${index}`}>
+                          <DropdownMenuLabel>{server.name} {!server.instance.usable && "(Relogin)"}</DropdownMenuLabel>
+
+                          <DropdownMenuSeparator />
+
+                          {
+                            server.instance.models.map((model, idx) => (
+                              <DropdownMenuRadioItem disabled={!server.instance.usable} key={`${idx}-${model.id}`} value={`${index}-${idx}`}>{model.name}</DropdownMenuRadioItem>
+                            ))
+                          }
+                        </React.Fragment>
+                      ))
+                    }
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <Button
+                variant="outline"
+                className="rounded-full ml-auto"
+                size="xs"
+                onClick={() => onSelectConnect()}
+              >
+                <PodcastIcon />
+                Connect
+              </Button>
+            </>}
+
+          {connection === "connecting" &&
+            <>
+              <Button
                 variant="outline"
                 className="rounded-full"
-                size="icon-xs"
+                size="xs"
+                disabled
               >
-                <Plus />
-              </InputGroupButton>
-            </DropdownMenuTrigger>
+                {selection ?
+                  <>
+                    <Package />
+                    {serverList[Number(selection.split("-")[0])].instance.models[Number(selection.split("-")[1])].name}
+                  </>
+                  :
+                  "Select model"
+                }
+              </Button>
 
-            <DropdownMenuContent
-              side="top"
-              align="start"
-              className="p-2 [--radius:0.95rem]"
-            >
-              <DropdownMenuItem>
-                <Image />
-                Upload Image
+              <Button
+                variant="outline"
+                className="rounded-full ml-auto"
+                size="xs"
+                disabled
+              >
+                <PodcastIcon />
+                Connecting...
+              </Button>
+            </>}
 
-                <DropdownMenuShortcut className="ml-10">{ctrlOrCmd("V")}</DropdownMenuShortcut>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
+          {typeof (connection) == "object" && <>
 
-          </DropdownMenu>
-
-          <div className="ml-auto">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <InputGroupButton
                   variant="outline"
-                  className="rounded-lg"
+                  className="rounded-full"
+                  size="icon-xs"
                 >
-                  Ollama 3.2
+                  <Plus />
                 </InputGroupButton>
               </DropdownMenuTrigger>
 
               <DropdownMenuContent
                 side="top"
                 align="start"
-                className="rounded-md"
+                className="p-2 [--radius:0.95rem]"
               >
-                <DropdownMenuRadioGroup value="ollama3.2">
-                  <DropdownMenuLabel>AHQ AI</DropdownMenuLabel>
+                <DropdownMenuItem>
+                  <Image />
+                  Upload Image
 
-                  <DropdownMenuSeparator />
-
-                  <DropdownMenuRadioItem value="ollama3.2">Ollama 3.2</DropdownMenuRadioItem>
-
-                </DropdownMenuRadioGroup>
+                  <DropdownMenuShortcut className="ml-10">{ctrlOrCmd("V")}</DropdownMenuShortcut>
+                </DropdownMenuItem>
               </DropdownMenuContent>
+
             </DropdownMenu>
-          </div>
 
-          <Separator orientation="vertical" className="h-4!" />
+            <div className="ml-auto">
+              <Button
+                variant="outline"
+                className="rounded-full"
+                size="xs"
+              >
+                <NetworkIcon />
+                LLaMa 3.2
+              </Button>
+            </div>
 
-          <InputGroupButton
-            variant="default"
-            className="rounded-full"
-            size="icon-xs"
-          >
-            <ArrowUp />
-            <span className="sr-only">Send</span>
-          </InputGroupButton>
+            <Separator orientation="vertical" className="h-4!" />
+
+            <InputGroupButton
+              variant="default"
+              className="rounded-full"
+              size="icon-xs"
+            >
+              <ArrowUp />
+              <span className="sr-only">Send</span>
+            </InputGroupButton>
+          </>}
         </InputGroupAddon>
       </InputGroup>
     </div>
