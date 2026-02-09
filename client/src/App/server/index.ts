@@ -6,6 +6,7 @@ import { parse } from "date-fns"
 
 import { checkServerIntegrity } from "tauri-plugin-ahqai-api"
 import { AIWSChat } from "./ws";
+import { ChatInstance } from "../store/db/chats";
 
 export const supportedServerSemver = ">=0.2.x";
 
@@ -152,10 +153,11 @@ export class HTTPServer {
   /**
    * Get a handle to a AIWSChat
    * @param model The model to use
+   * @param chat Instance to use
    * @returns {AIWSChat}
    */
-  getWSCLass(model: string): AIWSChat {
-    return new AIWSChat(this.session, this.url, model);
+  getWSCLass(model: string, chat: ChatInstance): AIWSChat {
+    return new AIWSChat(this.session, chat, this.url, model);
   }
 
   /**

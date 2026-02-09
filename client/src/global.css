@@ -163,3 +163,7 @@ html.dark[no-transparent] body {
 [data-slot="resizable-handle"] {
   background-color: transparent !important;
 }
+
+[data-sonner-toast][data-styled="true"] {
+  @apply bg-accent/90;
+}

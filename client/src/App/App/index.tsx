@@ -38,15 +38,15 @@ export default function Application() {
       case AppPage.Settings:
         return <Settings />
       case AppPage.Chat:
-        return <Chat newChat={true} temporary={false} />;
+        return <Chat key="chatpage" newChat={true} temporary={false} updateChatPage={setChatPageData} />;
       case AppPage.Diposable:
-        return <Chat newChat={true} temporary={true} />;
+        return <Chat key="disposable" newChat={true} temporary={true} updateChatPage={undefined} />;
       case AppPage.ChatPage:
-        return <Chat newChat={false} temporary={false} chatId={chatPageData} />;
+        return <Chat key={`chat-${chatPageData}`} newChat={false} temporary={false} chatId={chatPageData} updateChatPage={undefined} />;
       default:
         return <>Hi</>;
     }
-  }, [page]);
+  }, [page, chatPageData]);
 
   if (tab) {
     return <ApplicationDesktop
@@ -106,7 +106,7 @@ interface Props {
   pageSet: (page: AppPage) => void;
   content: ReactNode | ReactNode[];
   chatPageData: number | undefined;
-  setChatPageData: (page: number) => void;
+  setChatPageData: (page: number | undefined) => void;
 }
 
 export function ApplicationDesktop({ pageSet, page, content, chatPageData, setChatPageData }: Props) {

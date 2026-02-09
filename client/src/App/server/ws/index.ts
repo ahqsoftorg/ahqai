@@ -1,3 +1,4 @@
+import { ChatInstance } from "@/App/store/db/chats";
 import WebSocket from "@tauri-apps/plugin-websocket"
 
 export class AIWSChat {
@@ -5,10 +6,14 @@ export class AIWSChat {
   url: string;
   model: string;
 
+  hinst: ChatInstance;
   ws: WebSocket | undefined = undefined;
 
-  constructor(session: string, url: string, model: string) {
+  poll: { data: string, cb: (_: string) => void }[] = [];
+
+  constructor(session: string, hinst: ChatInstance, url: string, model: string) {
     this.session = session;
+    this.hinst = hinst;
     this.url = url.replace("http://", "ws://").replace("https://", "wss://");
     this.model = model;
   }
@@ -21,9 +26,71 @@ export class AIWSChat {
       }
     });
 
-    console.log(ws);
-
     this.ws = ws;
+
+    this.ws.addListener((msg) => {
+      const data = this.poll.shift();
+
+      data?.cb(msg.data as string);
+
+      if (this.poll.length > 0) {
+        this.wsSend(this.poll[0].data);
+      }
+    });
+  }
+
+  wsSend(data: string) {
+    this.ws!.send({
+      type: "Text",
+      data
+    });
+  }
+
+  sendAndPoll(data: string) {
+    return new Promise((resolve) => {
+      if (this.poll.length == 0) {
+        this.wsSend(data);
+      }
+
+      this.poll.push({
+        data,
+        cb: resolve
+      });
+    });
+  }
+
+  async restore() {
+    await this.sendAndPoll(JSON.stringify({
+      event: "feed",
+      history: (await Promise.all(this.hinst.cache.messages.slice(-200).map(this.hinst.getMessage)))
+        .map((msg) => {
+          if (msg.responder == "user") {
+            return {
+              role: "user",
+              content: [
+                {
+                  "type": "text",
+                  text: msg.content
+                }
+              ]
+            }
+          } else if (msg.responder == "assistant") {
+            return {
+              role: "assistant",
+              content: msg.content,
+              thinking: null
+            }
+          } else {
+            throw new Error("Unknown error");
+          }
+        })
+    }));
+  }
+
+  async init() {
+    await this.sendAndPoll(JSON.stringify({
+      event: "init"
+    }));
   }
 
   async disconnect() {

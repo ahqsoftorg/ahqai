@@ -1,25 +1,46 @@
 import { Separator } from "@/components/ui/separator";
 import { MessageCircleDashed, MessageCircle, Settings, /*ShieldUser,*/ LucideProps } from "lucide-react";
-import { ForwardRefExoticComponent, RefAttributes } from "react";
+import { ForwardRefExoticComponent, RefAttributes, useEffect, useState } from "react";
 import { AppPage } from ".";
-import { Chat } from "../store/db/chats";
+import { Chat, ChatDatabase, chatdb } from "../store/db/chats";
 
 interface SidebarProps {
   page: AppPage;
   pageSet: (prop: AppPage) => void;
   chatPage: number | undefined;
-  chatPageSet: (prop: number) => void;
+  chatPageSet: (prop: number | undefined) => void;
 }
 
 export default function Sidebar({ page, pageSet, chatPage, chatPageSet }: SidebarProps) {
-  const chats = [] as Chat[];
+  const [chats, setChats] = useState<"loading" | Chat[]>("loading");
+
+  useEffect(() => {
+    (async () => {
+      const data = (await Promise.all((await chatdb.listchats()).map(chatdb.fetchchat))).filter((t) => t != undefined).map((t) => t.chat!!);
+      setChats(data);
+
+      ChatDatabase.cb = (chat) => {
+        setChats((c) => {
+          if (c === "loading") return [chat]; // Handle initial load case
+          return [...c, chat]; // Create a new array reference
+        });
+      };
+    })()
+
+    return () => {
+      ChatDatabase.cb = () => { };
+    };
+  }, []);
+
+  console.log(chatPage);
 
   return <div className="w-full h-full px-3 py-2 gap-1 flex flex-col overflow-y-scroll overflow-x-clip">
     <SidebarItem
       text="New Chat"
       Icon={MessageCircle}
-      isActive={page == AppPage.Chat}
+      isActive={page == AppPage.Chat && chatPage === undefined}
       activated={() => {
+        chatPageSet(undefined);
         pageSet(AppPage.Chat);
       }}
     />
@@ -35,25 +56,32 @@ export default function Sidebar({ page, pageSet, chatPage, chatPageSet }: Sideba
 
     <Separator />
 
-    <div className="h-full flex flex-col w-full gap-1">
+    <div className="h-full flex flex-col w-full overflow-y-scroll gap-1">
       <div className="text-muted-foreground select-none ml-2">
         Chats
       </div>
 
-      {chats.map((data) => (
-        <SidebarItem
-          text={data.title}
-          isActive={page == AppPage.ChatPage && chatPage == data.id}
-          Icon={MessageCircle}
-          activated={() => {
-            chatPageSet(data.id);
-            pageSet(AppPage.ChatPage);
-          }}
-          key={data.id}
-        />
-      ))}
+      <div className="w-full h-full overflow-x-hidden overflow-y-scroll gap-1">
+        {chats != "loading" && [...chats].reverse().map((data) => (
+          <SidebarItem
+            text={data.title}
+            isActive={
+              (page == AppPage.ChatPage && chatPage == data.id) ||
+              (page == AppPage.Chat && chatPage === data.id)
+            }
+            Icon={MessageCircle}
+            activated={() => {
+              chatPageSet(data.id);
+              pageSet(AppPage.ChatPage);
+            }}
+            key={data.id}
+          />
+        ))}
+      </div>
 
-      {chats.length == 0 && <span className="mx-auto mt-2 select-none text-secondary-foreground">No chats found</span>}
+      {chats == "loading" && <span className="dui-loading dui-loading-dots mx-auto text-muted-foreground"></span>}
+
+      {chats.length == 0 && <span className="mx-auto mt-2 select-none text-muted-foreground">No chats found</span>}
     </div>
 
     <Separator />

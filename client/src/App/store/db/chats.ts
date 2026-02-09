@@ -1,9 +1,11 @@
 import Database from "@tauri-apps/plugin-sql";
 
 // TODO: Rewrite in rust once app becomes slow
-class ChatDatabase {
+export class ChatDatabase {
   static db: Database;
   private static inprog = false;
+
+  static cb: (_: Chat) => void = () => { };
 
   async get() {
     if (ChatDatabase.inprog) { return; }
@@ -19,11 +21,6 @@ class ChatDatabase {
       await db.execute("PRAGMA page_size = 4096;");
       await db.execute("PRAGMA foreign_keys = ON;");
     }
-
-    // const chatid = await this.newchat("Hello world", "");
-    // console.log(await this.fetchchat(chatid));
-    // await this.listchats();
-    // await this.deletechat(chatid);
   }
 
   async newchat(title: string, metadata: string): Promise<number> {
@@ -38,7 +35,15 @@ class ChatDatabase {
     // so the new chat ID is returned to the UI immediately.
     this.checkAndPrune(120, 10);
 
-    return output.lastInsertId!!;
+    const lastInsert = output.lastInsertId!!;
+
+    try {
+      ChatDatabase.cb((await this.fetchchat(lastInsert))!.chat!);
+    } catch (e) {
+      console.log(e);
+    }
+
+    return lastInsert;
   }
 
   private async checkAndPrune(limit: number, buffer: number) {
@@ -70,8 +75,6 @@ class ChatDatabase {
     const db = ChatDatabase.db;
 
     const output = (await db.select<{ id: number }[]>("SELECT id FROM CHATS", [])).map((d) => d.id);
-
-    console.log(output);
 
     return output;
   }
@@ -123,6 +126,8 @@ export class ChatInstance {
   chat: Chat | undefined = undefined;
   db = ChatDatabase.db;
 
+  cb: (msg: Message) => void = (_) => { };
+
   async init(ch: Chat | number | "temporary" | undefined) {
     const db = ChatDatabase.db;
 
@@ -168,7 +173,8 @@ export class ChatInstance {
       return;
     }
 
-    if (!this.chat_id) {
+    if (this.chat_id == undefined) {
+      console.log("Allocating chat id");
       const chatid = await chatdb.newchat(msg.content, "");
 
       this.chat_id = chatid;
@@ -186,6 +192,11 @@ export class ChatInstance {
     `, [this.chat_id!!, msg.responder, msg.content, msg.metadata])).lastInsertId!!;
 
     this.cache.messages.push(msgid);
+
+    const msgdata = await this.getMessage(msgid);
+
+    this.cache.msgMap[msgid] = msgdata;
+    this.cb(msgdata);
   }
 
   async getMessage(id: number) {
