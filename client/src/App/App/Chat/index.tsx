@@ -33,8 +33,10 @@ interface InternalProps {
 }
 
 export default function Chat(props: ChatProps) {
+  const { temporary, newChat, chatId } = props; // Destructure here
+
   const chatctx = useMemo(() => {
-    if (props.temporary) {
+    if (temporary) {
       return (async () => {
         const c = new ChatInstance();
         await c.init("temporary");
@@ -42,7 +44,7 @@ export default function Chat(props: ChatProps) {
       })();
     }
 
-    if (props.newChat || !props.chatId) {
+    if (newChat && !chatId) {
       return (async () => {
         const c = new ChatInstance();
         await c.init(undefined);
@@ -52,10 +54,10 @@ export default function Chat(props: ChatProps) {
 
     return (async () => {
       const c = new ChatInstance();
-      await c.init(props.chatId);
+      await c.init(chatId);
       return c;
     })();
-  }, [props]);
+  }, [temporary, newChat, chatId]);
 
   return <Suspense fallback={<Loading />}>
     <ChatLayout chat={chatctx} updateChatPage={props.updateChatPage} />
@@ -88,8 +90,9 @@ function ChatLayout(props: InternalProps) {
   useEffect(() => {
     return () => {
       ws?.disconnect();
+      chatinterface.cleanup();
     };
-  }, [ws]);
+  }, [ws, chatinterface]);
 
   // TODO: Side Effects
   useEffect(() => {
@@ -120,7 +123,7 @@ function ChatLayout(props: InternalProps) {
     }
 
     return () => {
-      ev();
+      try { ev(); } catch (e) { }
       toast.dismiss();
     }
   }, []);
@@ -189,7 +192,7 @@ function ChatLayout(props: InternalProps) {
 
   return <div className="w-full h-full flex flex-col gap-1 md:pb-5">
     <div className="h-full w-full overflow-y-scroll">
-      <Messages chat={chatinterface} server={serverList[Number(selection?.split("-")?.[0])]?.instance} ws={ws} />
+      <Messages key={`chat-${chatinterface.chat_id}`} chat={chatinterface} server={serverList[Number(selection?.split("-")?.[0])]?.instance} ws={ws} />
     </div>
 
     <div className="w-full items-center text-center justify-center flex">
@@ -372,7 +375,6 @@ function ChatLayout(props: InternalProps) {
                 variant="outline"
                 className="rounded-full"
                 size="xs"
-                onClick={() => submit()}
               >
                 <NetworkIcon />
                 {serverList[Number(selection!!.split("-")[0])].instance.models[Number(selection!!.split("-")[1])].name}
@@ -385,6 +387,7 @@ function ChatLayout(props: InternalProps) {
               variant="default"
               className="rounded-full cursor-pointer"
               size="icon-xs"
+              onClick={() => submit()}
             >
               <ArrowUp />
               <span className="sr-only">Send</span>

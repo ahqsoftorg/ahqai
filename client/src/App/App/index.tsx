@@ -8,8 +8,6 @@ import { Menu } from "lucide-react";
 import Settings from "./Settings";
 import Chat from "./Chat";
 
-
-
 export enum AppPage {
   Diposable = 2,
   Chat = 3,
@@ -31,20 +29,39 @@ export default function Application() {
 
   const [dialogOpen, setOpeNav] = useState(false);
   const [page, setPage] = useState<AppPage>(AppPage.Chat);
+
+  const [refresh, setRefresh] = useState(0);
   const [chatPageData, setChatPageData] = useState<number | undefined>();
 
   const content = useMemo(() => {
     switch (page) {
       case AppPage.Settings:
         return <Settings />
-      case AppPage.Chat:
-        return <Chat key="chatpage" newChat={true} temporary={false} updateChatPage={setChatPageData} />;
       case AppPage.Diposable:
         return <Chat key="disposable" newChat={true} temporary={true} updateChatPage={undefined} />;
-      case AppPage.ChatPage:
-        return <Chat key={`chat-${chatPageData}`} newChat={false} temporary={false} chatId={chatPageData} updateChatPage={undefined} />;
+      case AppPage.Chat:
+      case AppPage.ChatPage: {
+        // If we are in "New Chat" mode or just assigned an ID, 
+        // we use a stable "session" key.
+        // We ONLY use a specific ID key if we are viewing a 
+        // historical chat (ChatPage) that isn't the one we just started.
+        const isInitialSession = page === AppPage.Chat || !chatPageData;
+        const key = isInitialSession ? `session-${refresh}` : `chat-history-${chatPageData}`;
+
+        return (
+          <Chat
+            key={key}
+            newChat={page === AppPage.Chat}
+            temporary={false}
+            chatId={chatPageData}
+            updateChatPage={(id) => {
+              setChatPageData(id);
+            }}
+          />
+        );
+      }
       default:
-        return <>Hi</>;
+        return <>Not Found</>;
     }
   }, [page, chatPageData]);
 
@@ -54,6 +71,7 @@ export default function Application() {
       setChatPageData={setChatPageData}
       page={page} content={content}
       pageSet={(page) => setPage(page)}
+      setRefresh={setRefresh}
     />;
   }
 
@@ -82,6 +100,7 @@ export default function Application() {
               setOpeNav(false);
               setPage(page);
             }}
+            setRefresh={setRefresh}
           />
         </SheetContent>
       </Sheet>
@@ -107,9 +126,10 @@ interface Props {
   content: ReactNode | ReactNode[];
   chatPageData: number | undefined;
   setChatPageData: (page: number | undefined) => void;
+  setRefresh: (d: number) => void;
 }
 
-export function ApplicationDesktop({ pageSet, page, content, chatPageData, setChatPageData }: Props) {
+export function ApplicationDesktop({ pageSet, page, content, chatPageData, setChatPageData, setRefresh }: Props) {
   const lg = useMediaQuery("(min-width: 1024px)");
 
   const { min, max, def } = useMemo(() => {
@@ -145,7 +165,7 @@ export function ApplicationDesktop({ pageSet, page, content, chatPageData, setCh
         pageSet={pageSet}
         chatPage={chatPageData}
         chatPageSet={setChatPageData}
-
+        setRefresh={setRefresh}
       />
     </ResizablePanel>
 

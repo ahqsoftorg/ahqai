@@ -1,17 +1,20 @@
 import { Separator } from "@/components/ui/separator";
-import { MessageCircleDashed, MessageCircle, Settings, /*ShieldUser,*/ LucideProps } from "lucide-react";
+import { MessageCircleDashed, MessageCircle, Settings, /*ShieldUser,*/ LucideProps, MoreHorizontalIcon, Trash2Icon } from "lucide-react";
 import { ForwardRefExoticComponent, RefAttributes, useEffect, useState } from "react";
 import { AppPage } from ".";
 import { Chat, ChatDatabase, chatdb } from "../store/db/chats";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
 interface SidebarProps {
   page: AppPage;
   pageSet: (prop: AppPage) => void;
   chatPage: number | undefined;
   chatPageSet: (prop: number | undefined) => void;
+  setRefresh: (d: number) => void;
 }
 
-export default function Sidebar({ page, pageSet, chatPage, chatPageSet }: SidebarProps) {
+export default function Sidebar({ page, pageSet, chatPage, chatPageSet, setRefresh }: SidebarProps) {
   const [chats, setChats] = useState<"loading" | Chat[]>("loading");
 
   useEffect(() => {
@@ -32,14 +35,13 @@ export default function Sidebar({ page, pageSet, chatPage, chatPageSet }: Sideba
     };
   }, []);
 
-  console.log(chatPage);
-
   return <div className="w-full h-full px-3 py-2 gap-1 flex flex-col overflow-y-scroll overflow-x-clip">
     <SidebarItem
       text="New Chat"
       Icon={MessageCircle}
       isActive={page == AppPage.Chat && chatPage === undefined}
       activated={() => {
+        setRefresh(Date.now());
         chatPageSet(undefined);
         pageSet(AppPage.Chat);
       }}
@@ -50,18 +52,20 @@ export default function Sidebar({ page, pageSet, chatPage, chatPageSet }: Sideba
       Icon={MessageCircleDashed}
       isActive={page == AppPage.Diposable}
       activated={() => {
+        chatPageSet(undefined);
+
         pageSet(AppPage.Diposable);
       }}
     />
 
     <Separator />
 
-    <div className="h-full flex flex-col w-full overflow-y-scroll gap-1">
+    <div className="h-full flex flex-col w-full overflow-y-scroll gap-2">
       <div className="text-muted-foreground select-none ml-2">
         Chats
       </div>
 
-      <div className="w-full h-full overflow-x-hidden overflow-y-scroll gap-1">
+      <div className="w-full h-full overflow-x-hidden overflow-y-scroll">
         {chats != "loading" && [...chats].reverse().map((data) => (
           <SidebarItem
             text={data.title}
@@ -73,6 +77,10 @@ export default function Sidebar({ page, pageSet, chatPage, chatPageSet }: Sideba
             activated={() => {
               chatPageSet(data.id);
               pageSet(AppPage.ChatPage);
+            }}
+            del={() => {
+              chatdb.deletechat(data.id);
+              setChats((ch) => ([...(ch as Chat[])].filter((ch) => ch.id != data.id)));
             }}
             key={data.id}
           />
@@ -106,9 +114,33 @@ export default function Sidebar({ page, pageSet, chatPage, chatPageSet }: Sideba
   </div>
 }
 
-function SidebarItem({ text, Icon, isActive, activated }: { text: string, Icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>, activated?: () => void, isActive: boolean }) {
+type Delete = () => void;
+
+function SidebarItem({ text, del, Icon, isActive, activated }: { text: string, del?: Delete, Icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>, activated?: () => void, isActive: boolean }) {
   return <div onClick={() => activated && activated()} className={`w-full h-10 flex overflow-x-hidden rounded-lg overflow-y-hidden px-3 gap-2 py-2 select-none cursor-pointer transition-all border border-transparent ${isActive ? "shadow-lg! border-border! bg-neutral/30!" : "hover:shadow-lg hover:border-border hover:bg-neutral/30"} items-center group`}>
     <Icon className={`text-muted-foreground ${isActive ? "text-base-content!" : "group-hover:text-base-content"} min-h-5 max-h-5 min-w-5 max-w-5`} />
     <span className={`text-sm line-clamp-1 text-muted-foreground ${isActive ? "text-base-content!" : "group-hover:text-base-content"}`}>{text}</span>
+
+    {del && !isActive &&
+      <div className="ml-auto ml-1">
+        <DropdownMenu >
+          <DropdownMenuTrigger asChild>
+            <Button variant={"ghost"} size="icon-xs" onClick={(e) => e.stopPropagation()}>
+              <MoreHorizontalIcon />
+            </Button>
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent align="center" className="w-40">
+            <DropdownMenuItem onClick={(e) => {
+              e.stopPropagation();
+              del();
+            }} variant="destructive">
+              <Trash2Icon />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    }
   </div>
 }

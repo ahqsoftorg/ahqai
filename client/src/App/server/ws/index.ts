@@ -62,7 +62,7 @@ export class AIWSChat {
   async restore() {
     await this.sendAndPoll(JSON.stringify({
       event: "feed",
-      history: (await Promise.all(this.hinst.cache.messages.slice(-200).map(this.hinst.getMessage)))
+      history: (await Promise.all(this.hinst.cache.messages.slice(-200).map(this.hinst.getMessage.bind(this.hinst))))
         .map((msg) => {
           if (msg.responder == "user") {
             return {

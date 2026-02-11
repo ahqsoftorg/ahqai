@@ -71,6 +71,15 @@ export class ChatDatabase {
     );`, [limit]);
   }
 
+  async deletechat(id: number) {
+    const db = ChatDatabase.db;
+
+    await db.execute(`
+      DELETE FROM CHATS
+      WHERE id=$1;
+    `, [id]);
+  }
+
   async listchats(): Promise<number[]> {
     const db = ChatDatabase.db;
 
@@ -200,7 +209,7 @@ export class ChatInstance {
   }
 
   async getMessage(id: number) {
-    if (this.cache.msgMap[id]) {
+    if (this && this.cache && this.cache.msgMap[id]) {
       return this.cache.msgMap[id];
     }
 
@@ -213,13 +222,15 @@ export class ChatInstance {
     return msg;
   }
 
-  async deletechat(id: number) {
-    const db = ChatDatabase.db;
+  async deletechat() {
+    if (typeof (this.chat_id) == "number") {
+      const db = ChatDatabase.db;
 
-    await db.execute(`
-      DELETE FROM CHATS
-      WHERE id=$1;
-    `, [id]);
+      await db.execute(`
+        DELETE FROM CHATS
+        WHERE id=$1;
+      `, [this.chat_id]);
+    }
   }
 
   cleanup() {
