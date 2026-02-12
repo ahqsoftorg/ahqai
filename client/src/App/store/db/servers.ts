@@ -42,6 +42,12 @@ export async function initServerState() {
 
   ServersState.value = outValue;
 
+  setInterval(async () => {
+    const outValue = await checkServers(val);
+
+    ServersState.value = outValue;
+  }, 2 * 60 * 1000);
+
   ServersState.registerListener((data) => {
     writeTextFile("server.json", JSON.stringify(data.map((server) => ({
       name: server.name,

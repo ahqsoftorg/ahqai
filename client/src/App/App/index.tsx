@@ -30,7 +30,7 @@ export default function Application() {
   const [dialogOpen, setOpeNav] = useState(false);
   const [page, setPage] = useState<AppPage>(AppPage.Chat);
 
-  const [refresh, setRefresh] = useState(0);
+  const [refresh, setRefresh] = useState<number | undefined>(0);
   const [chatPageData, setChatPageData] = useState<number | undefined>();
 
   const content = useMemo(() => {
@@ -38,7 +38,7 @@ export default function Application() {
       case AppPage.Settings:
         return <Settings />
       case AppPage.Diposable:
-        return <Chat key="disposable" newChat={true} temporary={true} updateChatPage={undefined} />;
+        return <Chat refresh={refresh} key="disposable" newChat={true} temporary={true} updateChatPage={undefined} />;
       case AppPage.Chat:
       case AppPage.ChatPage: {
         // If we are in "New Chat" mode or just assigned an ID, 
@@ -50,6 +50,7 @@ export default function Application() {
 
         return (
           <Chat
+            refresh={refresh}
             key={key}
             newChat={page === AppPage.Chat}
             temporary={false}
@@ -126,7 +127,7 @@ interface Props {
   content: ReactNode | ReactNode[];
   chatPageData: number | undefined;
   setChatPageData: (page: number | undefined) => void;
-  setRefresh: (d: number) => void;
+  setRefresh: (d: number | undefined) => void;
 }
 
 export function ApplicationDesktop({ pageSet, page, content, chatPageData, setChatPageData, setRefresh }: Props) {

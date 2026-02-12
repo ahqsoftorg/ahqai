@@ -1,6 +1,5 @@
 // import ctrlOrCmd from "@/App/server/kbd";
 
-import { ChatInstance } from "@/App/store/db/chats";
 import { ServersState } from "@/App/store/db/servers";
 import useStateData from "@/App/store/state";
 import { Button } from "@/components/ui/button";
@@ -8,59 +7,29 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from "@/components/ui/input-group";
 import { Separator } from "@/components/ui/separator";
-import { useMediaQuery } from "@/hooks/use-media-query";
 import { UnlistenFn } from "@tauri-apps/api/event";
 
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow"
 
 import { ArrowUp, ChevronLeft, ChevronRight, PodcastIcon, NetworkIcon, Package } from "lucide-react";
-import React, { Suspense, use, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useRef, useState } from "react";
 
 import { toast } from "sonner";
 import { Messages } from "./Messages";
-import { AIWSChat } from "@/App/server/ws";
+import { ButtonGroup } from "@/components/ui/button-group";
+import { useChatManager } from "@/App/server/chat";
 
 export interface ChatProps {
   newChat: boolean;
   temporary: boolean;
   chatId?: number;
-  updateChatPage: ((data: number | undefined) => void) | undefined;
-}
-
-interface InternalProps {
-  chat: Promise<ChatInstance>;
+  refresh: number | undefined;
   updateChatPage: ((data: number | undefined) => void) | undefined;
 }
 
 export default function Chat(props: ChatProps) {
-  const { temporary, newChat, chatId } = props; // Destructure here
-
-  const chatctx = useMemo(() => {
-    if (temporary) {
-      return (async () => {
-        const c = new ChatInstance();
-        await c.init("temporary");
-        return c;
-      })();
-    }
-
-    if (newChat && !chatId) {
-      return (async () => {
-        const c = new ChatInstance();
-        await c.init(undefined);
-        return c;
-      })();
-    }
-
-    return (async () => {
-      const c = new ChatInstance();
-      await c.init(chatId);
-      return c;
-    })();
-  }, [temporary, newChat, chatId]);
-
   return <Suspense fallback={<Loading />}>
-    <ChatLayout chat={chatctx} updateChatPage={props.updateChatPage} />
+    <ChatLayout key={`chatinstance-${props.refresh || props.chatId || "temporary"}`} {...props} />
   </Suspense>
 }
 
@@ -70,8 +39,14 @@ function Loading() {
   </div>;
 }
 
-function ChatLayout(props: InternalProps) {
-  const chatinterface = use(props.chat);
+function ChatLayout(props: ChatProps) {
+  console.log(props.refresh || props.chatId || 5512);
+  const { chat, ws, messages, chatHook, status, connectWS } = useChatManager(
+    props.chatId,
+    props.temporary,
+    props.newChat,
+    props.refresh || props.chatId || 5512
+  );
 
   const scrollable = useRef<HTMLDivElement | null>(null);
   const [scrolled, setScroll] = useState(0);
@@ -79,20 +54,7 @@ function ChatLayout(props: InternalProps) {
 
   const serverList = useStateData(ServersState);
 
-  const [connection, setConnection] = useState<object | "connecting" | undefined>(undefined);
   const [selection, setSelection] = useState<string | undefined>();
-
-  const [ws, setWs] = useState<AIWSChat | undefined>();
-
-  const size = useMediaQuery("(min-width: 768px)");
-
-  // Clean up WS
-  useEffect(() => {
-    return () => {
-      ws?.disconnect();
-      chatinterface.cleanup();
-    };
-  }, [ws, chatinterface]);
 
   // TODO: Side Effects
   useEffect(() => {
@@ -136,75 +98,74 @@ function ChatLayout(props: InternalProps) {
     });
   }, [scrollable]);
 
-  const onSelectConnect = useCallback(() => {
-    if (selection) {
-      setConnection("connecting");
+  const [responding, setResponding] = useState(false);
 
-      toast.promise(
-        async () => {
-          const server = serverList[Number(selection!.split("-")[0])].instance;
-          const model = server.models[Number(selection!.split("-")[1])].id;
+  const onSelectConnect = useCallback(async () => {
+    if (!selection || !chat) return;
 
-          const ws = server.getWSCLass(model, chatinterface);
-          await ws.connect().catch(console.error);
+    const [serverIdx, modelIdx] = selection.split("-").map(Number);
+    const server = serverList[serverIdx].instance;
+    const model = server.models[modelIdx].id;
 
-          try {
-            await ws.restore();
-            await ws.init();
-
-            setWs(ws);
-            setConnection({});
-          } catch (e) {
-            console.log(e);
-            await ws.disconnect();
-            throw new Error(String(e));
-          }
-
-        },
-        {
-          position: size ? "top-right" : "top-center",
-          loading: "Connecting...",
-          success: `Successfully connected`,
-          error: (data) => `Error: ${data}`,
-          duration: 2000
-        }
-      );
+    try {
+      await connectWS(server, model);
+      toast.success("Successfully connected");
+    } catch (e) {
+      toast.error(`Connection failed: ${e}`);
     }
-  }, [chatinterface, selection, size]);
+  }, [selection, serverList, chat, connectWS]);
 
 
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
-  const submit = useCallback(() => {
-    const prompt = inputRef.current!.value;
 
-    chatinterface.insertMessage({
-      content: prompt,
-      responder: "user",
-      metadata: ""
-    }).then(() => {
-      if (typeof (chatinterface.chat_id) == "number") {
-        props.updateChatPage?.(chatinterface.chat_id);
+  const submit = useCallback(async () => {
+    if (!chat || !ws || responding || !inputRef.current?.value) return;
+
+    const prompt = inputRef.current.value;
+    setResponding(true);
+    inputRef.current.value = "";
+
+    try {
+      // The hook's 'chat.cb' will automatically pick up this insertion 
+      // and update the 'messages' array for us.
+      const msgid = await chat.insertMessage({
+        content: prompt,
+        responder: "user",
+        metadata: ""
+      });
+
+      // Update parent page if it's a new real chat
+      if (typeof chat.chat_id === "number") {
+        props.updateChatPage?.(chat.chat_id);
       }
-    });
 
-    inputRef.current!.value = "";
-  }, [chatinterface, inputRef]);
+      await chatHook(msgid!!, prompt);
+    } catch (e) {
+      toast.error("Failed to send message");
+    } finally {
+      setResponding(false);
+    }
+  }, [chat, ws, responding, props.updateChatPage]);
 
   return <div className="w-full h-full flex flex-col gap-1 md:pb-5">
     <div className="h-full w-full overflow-y-scroll">
-      <Messages key={`chat-${chatinterface.chat_id}`} chat={chatinterface} server={serverList[Number(selection?.split("-")?.[0])]?.instance} ws={ws} />
+      <Messages
+        messages={messages}
+        generating={responding}
+        chat={chat!}
+      />
     </div>
 
     <div className="w-full items-center text-center justify-center flex">
       <InputGroup className="w-full rounded-none sm:rounded-md max-h-64 md:min-w-120 sm:max-w-[75%]">
         <InputGroupTextarea
-          disabled={typeof (connection) != "object"}
+          disabled={status !== "connected"}
           onPaste={(data) => {
             console.log(data.clipboardData.files);
             alert("Paste!!");
           }}
           ref={inputRef}
-          placeholder={typeof (connection) != "object" ? "Connect to chat with AI" : "Ask, Converse or Chat about a topic..."}
+          placeholder={status !== "connected" ? "Connect to chat with AI" : "Ask, Converse or Chat about a topic..."}
           onKeyDown={(e) => {
             if (!e.shiftKey && e.key == 'Enter') {
               e.preventDefault();
@@ -222,7 +183,7 @@ function ChatLayout(props: InternalProps) {
         </InputGroupAddon>
         <InputGroupAddon
           align="block-start"
-          className="cursor-default my-auto flex px-5 absolute hidden"
+          className="cursor-default my-auto px-5 absolute hidden!"
         >
           <InputGroupButton
             variant="default"
@@ -256,8 +217,8 @@ function ChatLayout(props: InternalProps) {
         </InputGroupAddon>
 
         <InputGroupAddon align="block-end" className="cursor-default">
-          {connection === undefined &&
-            <>
+          {status === "ready" &&
+            <ButtonGroup className="ml-auto">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <InputGroupButton
@@ -267,7 +228,10 @@ function ChatLayout(props: InternalProps) {
                     {selection ?
                       <>
                         <Package />
-                        {serverList[Number(selection.split("-")[0])].instance.models[Number(selection.split("-")[1])].name}
+                        {(() => {
+                          const [sIdx, mIdx] = selection.split("-").map(Number);
+                          return serverList[sIdx]?.instance?.models[mIdx]?.name || "Connected";
+                        })()}
                       </>
                       :
                       "Select model"
@@ -303,16 +267,16 @@ function ChatLayout(props: InternalProps) {
 
               <Button
                 variant="outline"
-                className="rounded-full ml-auto"
+                className="rounded-full"
                 size="xs"
                 onClick={() => onSelectConnect()}
               >
                 <PodcastIcon />
                 Connect
               </Button>
-            </>}
+            </ButtonGroup>}
 
-          {connection === "connecting" &&
+          {status === "connecting" &&
             <>
               <Button
                 variant="outline"
@@ -341,7 +305,7 @@ function ChatLayout(props: InternalProps) {
               </Button>
             </>}
 
-          {typeof (connection) == "object" && <>
+          {status === "connected" && <>
 
 
             {/* <DropdownMenu>
@@ -377,7 +341,10 @@ function ChatLayout(props: InternalProps) {
                 size="xs"
               >
                 <NetworkIcon />
-                {serverList[Number(selection!!.split("-")[0])].instance.models[Number(selection!!.split("-")[1])].name}
+                {(() => {
+                  const [sIdx, mIdx] = (selection || "-")?.split("-").map(Number)!;
+                  return serverList[sIdx]?.instance?.models[mIdx]?.name || "Connected";
+                })()}
               </Button>
             </div>
 

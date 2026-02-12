@@ -11,7 +11,7 @@ interface SidebarProps {
   pageSet: (prop: AppPage) => void;
   chatPage: number | undefined;
   chatPageSet: (prop: number | undefined) => void;
-  setRefresh: (d: number) => void;
+  setRefresh: (d: number | undefined) => void;
 }
 
 export default function Sidebar({ page, pageSet, chatPage, chatPageSet, setRefresh }: SidebarProps) {
@@ -52,6 +52,7 @@ export default function Sidebar({ page, pageSet, chatPage, chatPageSet, setRefre
       Icon={MessageCircleDashed}
       isActive={page == AppPage.Diposable}
       activated={() => {
+        setRefresh(0);
         chatPageSet(undefined);
 
         pageSet(AppPage.Diposable);
@@ -75,6 +76,7 @@ export default function Sidebar({ page, pageSet, chatPage, chatPageSet, setRefre
             }
             Icon={MessageCircle}
             activated={() => {
+              setRefresh(undefined);
               chatPageSet(data.id);
               pageSet(AppPage.ChatPage);
             }}
@@ -89,7 +91,7 @@ export default function Sidebar({ page, pageSet, chatPage, chatPageSet, setRefre
 
       {chats == "loading" && <span className="dui-loading dui-loading-dots mx-auto text-muted-foreground"></span>}
 
-      {chats.length == 0 && <span className="mx-auto mt-2 select-none text-muted-foreground">No chats found</span>}
+      {chats.length == 0 && <span className="mx-auto mt-2 select-none text-muted-foreground block h-full">No chats found</span>}
     </div>
 
     <Separator />

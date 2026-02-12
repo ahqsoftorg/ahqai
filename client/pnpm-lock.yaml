@@ -62,6 +62,12 @@ importers:
       embla-carousel-react:
         specifier: ^8.6.0
         version: 8.6.0(react@19.2.4)
+      highlight.js:
+        specifier: ^11.11.1
+        version: 11.11.1
+      katex:
+        specifier: ^0.16.28
+        version: 0.16.28
       lucide-react:
         specifier: ^0.563.0
         version: 0.563.0(react@19.2.4)

@@ -179,7 +179,7 @@ export class ChatInstance {
         updated_at: new Date().toDateString()
       };
       this.cache.messages.push(mid);
-      return;
+      return mid;
     }
 
     if (this.chat_id == undefined) {
@@ -206,6 +206,8 @@ export class ChatInstance {
 
     this.cache.msgMap[msgid] = msgdata;
     this.cb(msgdata);
+
+    return msgid;
   }
 
   async getMessage(id: number) {

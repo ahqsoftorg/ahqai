@@ -5,7 +5,7 @@ import { Category } from "@/components/category";
 import { Separator } from "@/components/ui/separator";
 import { PlusIcon, ScrollText } from "lucide-react";
 
-import { AppleLogoIcon, WindowsLogoIcon, AndroidLogoIcon, LinuxLogoIcon, ShoppingBagOpenIcon, ApplePodcastsLogoIcon } from "@phosphor-icons/react";
+import { AppleLogoIcon, WindowsLogoIcon, AndroidLogoIcon, LinuxLogoIcon, /*ShoppingBagOpenIcon, ApplePodcastsLogoIcon*/ } from "@phosphor-icons/react";
 
 import { ServerStackIcon } from "@heroicons/react/24/outline";
 
@@ -101,7 +101,7 @@ export default function Settings() {
     <h1 className="text-lg mt-3 mb-1">About & Attributions</h1>
 
     <div className="flex flex-col w-full gap-2">
-      <Category
+      {/* <Category
         title="Evergreen Build"
         description="This build of AHQ AI is evergreen"
         Icon={ApplePodcastsLogoIcon}
@@ -114,7 +114,7 @@ export default function Settings() {
         description="AHQ AI is shipped and updated by the AHQ Store"
         Icon={ShoppingBagOpenIcon}
         openable={false}
-      />
+      /> */}
 
       <Category
         title="Licenses"

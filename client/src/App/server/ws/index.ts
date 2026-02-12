@@ -1,5 +1,6 @@
-import { ChatInstance } from "@/App/store/db/chats";
+import { ChatInstance, Message } from "@/App/store/db/chats";
 import WebSocket from "@tauri-apps/plugin-websocket"
+import { toast } from "sonner";
 
 export class AIWSChat {
   session: string;
@@ -39,11 +40,15 @@ export class AIWSChat {
     });
   }
 
-  wsSend(data: string) {
-    this.ws!.send({
-      type: "Text",
-      data
-    });
+  async wsSend(data: string) {
+    try {
+      await this.ws!.send({
+        type: "Text",
+        data
+      });
+    } catch (e) {
+      toast.error("Could not send WS request!");
+    }
   }
 
   sendAndPoll(data: string) {
@@ -62,7 +67,7 @@ export class AIWSChat {
   async restore() {
     await this.sendAndPoll(JSON.stringify({
       event: "feed",
-      history: (await Promise.all(this.hinst.cache.messages.slice(-200).map(this.hinst.getMessage.bind(this.hinst))))
+      history: (await Promise.all(this.hinst.cache.messages.slice(-200).map(this.hinst.getMessage.bind(this.hinst)))).sort((am, bm) => new Date(am.created_at).getTime() - new Date(bm.created_at).getTime())
         .map((msg) => {
           if (msg.responder == "user") {
             return {
@@ -96,4 +101,49 @@ export class AIWSChat {
   async disconnect() {
     await this.ws!.disconnect();
   }
+
+  async chat(msg: string) {
+    const data = JSON.parse(await this.sendAndPoll(JSON.stringify({
+      event: "completion",
+      msg: [
+        {
+          "type": "text",
+          text: msg
+        }
+      ]
+    })) as string);
+
+    if (Array.isArray(data)) {
+      const chats = data as Msg[];
+
+      const msg = [] as Message[];
+
+      for (let i = 0; i < chats.length; i++) {
+
+        const chat = chats[i];
+
+        const id = await this.hinst.insertMessage({
+          responder: chat.role,
+          content: chat.content,
+          metadata: JSON.stringify(chat.thinking)
+        });
+
+        const chatmsg = await this.hinst.getMessage(id)!;
+
+        msg.push(chatmsg);
+      }
+
+      return msg;
+    }
+
+    toast.error("Something went wrong while AI was processing");
+
+    return [] as Message[];
+  }
+}
+
+interface Msg {
+  role: "assistant",
+  content: string,
+  thinking?: string
 }
